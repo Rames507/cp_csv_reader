@@ -60,7 +60,6 @@ class CPReader:
         Splits the  dataframe into valid cycles of 50 elements,
         25 elements apart (from cycle_id 0 to 49 and 25 to 24 respectively).
         Will ignore incomplete cycles.
-        :param raw_data: A dataframe with "cycle_id" column
         """
         # determines the starting point of the first cycle
         # (important if input file doesn't start at cycle_id == 0)
@@ -75,7 +74,6 @@ class CPReader:
     def range1(self) -> pd.DataFrame:
         """
         Calculates the range and range1 values from raw data.
-        :param raw_data_df:
         :return:
         """
         range1_dict = defaultdict(list)
@@ -110,7 +108,6 @@ class CPReader:
         Range2:
         Smoothes a series by taking the median of 7 consecutive values (3 preceeding, 3 following).
         First and last 3 values will be 'NaN'.
-        :param series:
         :return:
         """
         series = self.table["range1"]
