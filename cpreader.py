@@ -4,6 +4,7 @@ import pathlib
 from collections import defaultdict
 from typing import Iterable
 
+import matplotlib.axes
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -44,6 +45,13 @@ class CPReader:
         )
 
         self.single_values = self.calculate_single_values()
+        mcf_idx, mcf = self.calculate_mcf()
+        self.single_values["MCF"] = mcf
+
+        self.table["lysis"] = self.calculate_lysis(mcf_idx)
+        self.table["ML"] = self.table["lysis"].cummax()
+
+        self.single_values.update(self.calculate_lysis_values())
 
         pd.set_option("display.max_rows", 30)
         pd.set_option("display.max_columns", 15)
@@ -63,6 +71,7 @@ class CPReader:
         """
         # determines the starting point of the first cycle
         # (important if input file doesn't start at cycle_id == 0)
+        # TODO: maybe allow cycles to start at id 25?
         cycle_starting_points: pd.DataFrame = self.raw_data.index[self.raw_data["cycle_id"] == 0]
         start_idx: np.int64 = cycle_starting_points[0]
 
@@ -132,7 +141,6 @@ class CPReader:
         # CA(t) = (iRange-Range(t))  / iRange *GCC *CCC*TCC
         result_df = pd.DataFrame()
         result_df["ca_raw"] = (self.irange - self.table["range"]) * 100 / self.irange
-        # TODO: the * 100 is not mentioned in the excel doc
         result_df["ca_gcc"] = result_df["ca_raw"] * self.gcc
         result_df["ca_ccc"] = result_df["ca_gcc"] * self.ccc
         result_df["ca_tcc"] = result_df["ca_ccc"] * self.tcc
@@ -144,7 +152,6 @@ class CPReader:
         single_values = {
             "initial_CT": self.table[self.table["amplitude"] > 2].iloc[0]["time"],
             "definite_CT": (ct := self.table[self.table["amplitude"] > 4].iloc[0]["time"]),
-            "MCF": self.calculate_mcf(),
             "A5": self.table[self.table["time"] == ct + 60 * 5]["amplitude"].iloc[0],
             "A10": self.table[self.table["time"] == ct + 60 * 10]["amplitude"].iloc[0],
             "A20": self.table[self.table["time"] == ct + 60 * 20]["amplitude"].iloc[0],
@@ -152,7 +159,30 @@ class CPReader:
         }
         return single_values
 
-    def calculate_mcf(self) -> float:
+    def calculate_lysis_values(self) -> dict:
+        ct = self.single_values["definite_CT"]
+        lysis_values = {
+            "ML": min(self.table["lysis"].max(), 100),
+            "LOT": self.table[self.table["lysis"] > 15].iloc[0]["time"] - ct,
+            "LT": self.table[self.table["lysis"] > 50].iloc[0]["time"] - ct,
+        }
+
+        try:
+            lysis_values["ML30"] = self.table[self.table["time"] == ct + 60 * 30]["ML"].item()
+        except ValueError:
+            lysis_values["ML30"] = np.nan
+        try:
+            lysis_values["ML45"] = self.table[self.table["time"] == ct + 60 * 45]["ML"].item()
+        except ValueError:
+            lysis_values["ML45"] = np.nan
+        try:
+            lysis_values["ML60"] = self.table[self.table["time"] == ct + 60 * 60]["ML"].item()
+        except ValueError:
+            lysis_values["ML60"] = np.nan
+
+        return lysis_values
+
+    def calculate_mcf(self) -> tuple[int, float]:
         amplitudes = self.table["amplitude"]
         highest_ca: float = amplitudes[0]
         amplitude: float
@@ -176,7 +206,23 @@ class CPReader:
             if amplitude > highest_ca:
                 highest_ca = amplitude
 
-        return highest_ca
+        # noinspection PyUnboundLocalVariable
+        return idx, highest_ca
+
+    def calculate_lysis(self, mcf_idx: int) -> pd.Series:
+        # since the MCF is currently not working, we use the max values instead (testing only!)
+        # TODO: remove overwriting of mcf index
+        mcf_idx = self.table["amplitude"].idxmax()
+
+        mcf = self.table.iloc[mcf_idx]
+
+        lysis = pd.Series(np.zeros(len(self.table)))
+        lysis.iloc[:mcf_idx] = np.nan  # no lysis value before mcf is finalized
+
+        max_clot_firmness: float = mcf["amplitude"].item()
+        table_subset = self.table.iloc[mcf_idx:]
+        lysis.iloc[mcf_idx:] = (1 - (table_subset["amplitude"] / max_clot_firmness)) * 100
+        return lysis
 
 
 if __name__ == "__main__":
