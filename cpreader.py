@@ -45,20 +45,20 @@ class CPReader:
         )
 
         self.single_values = self.calculate_single_values()
+
         mcf_idx, mcf = self.calculate_mcf()
         self.single_values["MCF"] = mcf
-
         self.table["lysis"] = self.calculate_lysis(mcf_idx)
         self.table["ML"] = self.table["lysis"].cummax()
 
         self.single_values.update(self.calculate_lysis_values())
 
+        # TODO: remove those, just for testing
         pd.set_option("display.max_rows", 30)
         pd.set_option("display.max_columns", 15)
         pd.set_option("display.width", None)
         pos = 20
         print(self.table.loc[pos : pos + 20, :])
-        print(self.irange)
         from pprint import pprint
 
         pprint(self.single_values)
@@ -191,7 +191,7 @@ class CPReader:
                 (
                     # The MCF is finalized either (whichever scenario is achieved first)
                     # •	When 3 consecutive values are lower than the highest CA recorded prior to these 3 values
-                    sum(amplitudes.iloc[idx : idx + 4] < highest_ca) == 3
+                    sum(amplitudes.iloc[idx : idx + 3] < highest_ca) == 3
                     # •	When a CA of at least 20 mm is reached and the current CA is less than 0.5 mm larger
                     #   than the CA of the value 10 lines before
                     or (amplitude >= 20 and 0 < (amplitude - amplitudes.iloc[idx - 10]) < 0.5)
@@ -228,20 +228,3 @@ class CPReader:
 if __name__ == "__main__":
     t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
     # t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
-    # print(t.df)
-    # t.plot()
-
-    """
-    old plot method:
-    
-        def plot(self):
-        ...
-        # TODO
-        # plt.xlabel("time")
-        #
-        # columns_to_plot = ("range1", "range2")
-        # added_lines = plt.plot(self.range_df["time"], self.range_df.loc[:, columns_to_plot])
-        # plt.legend(added_lines, columns_to_plot)
-        #
-        # plt.show()
-    """
