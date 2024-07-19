@@ -4,7 +4,6 @@ import pathlib
 from collections import defaultdict
 from typing import Iterable
 
-import matplotlib.axes
 import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
@@ -32,26 +31,26 @@ class CPReader:
             rows = [[float(row[0]), *map(int, row[1:3])] for row in reader]
 
         self.raw_data: pd.DataFrame = pd.DataFrame(rows, columns=("time", "cycle_id", "angle_id"))
-        self.table: pd.DataFrame = self.range1()
-        self.table["range2"] = self.range2()
+        self.table: pd.DataFrame = self._range1()
+        self.table["range2"] = self._range2()
 
         # the slice is from 3 to 7 (both inclusive) since the first 3 values are always 'NaN'
         self.irange = np.mean(self.table.loc[3:7, "range2"])  # noqa
 
         self.table = self.table.merge(
-            self.clot_amplitude(),
+            self._clot_amplitude(),
             left_index=True,
             right_index=True,
         )
 
-        self.single_values = self.calculate_single_values()
+        self.single_values = self._calculate_single_values()
 
-        mcf_idx, mcf = self.calculate_mcf()
+        mcf_idx, mcf = self._calculate_mcf()
         self.single_values["MCF"] = mcf
-        self.table["lysis"] = self.calculate_lysis(mcf_idx)
+        self.table["lysis"] = self._calculate_lysis(mcf_idx)
         self.table["ML"] = self.table["lysis"].cummax()
 
-        self.single_values.update(self.calculate_lysis_values())
+        self.single_values.update(self._calculate_lysis_values())
 
         # TODO: remove those, just for testing
         pd.set_option("display.max_rows", 30)
@@ -63,7 +62,7 @@ class CPReader:
 
         pprint(self.single_values)
 
-    def get_cycles(self) -> Iterable[pd.DataFrame]:
+    def _get_cycles(self) -> Iterable[pd.DataFrame]:
         """
         Splits the  dataframe into valid cycles of 50 elements,
         25 elements apart (from cycle_id 0 to 49 and 25 to 24 respectively).
@@ -71,7 +70,7 @@ class CPReader:
         """
         # determines the starting point of the first cycle
         # (important if input file doesn't start at cycle_id == 0)
-        # TODO: maybe allow cycles to start at id 25?
+        # TODO: maybe allow first cycle to start at id 25?
         cycle_starting_points: pd.DataFrame = self.raw_data.index[self.raw_data["cycle_id"] == 0]
         start_idx: np.int64 = cycle_starting_points[0]
 
@@ -80,13 +79,13 @@ class CPReader:
             if len(cycle) == 50:
                 yield cycle
 
-    def range1(self) -> pd.DataFrame:
+    def _range1(self) -> pd.DataFrame:
         """
         Calculates the range and range1 values from raw data.
         :return:
         """
         range1_dict = defaultdict(list)
-        for cycle in self.get_cycles():
+        for cycle in self._get_cycles():
             cycle_id = cycle["cycle_id"]
             median_values1: pd.DataFrame = cycle.loc[(7 <= cycle_id) & (cycle_id <= 19)]
             median_values2: pd.DataFrame = cycle.loc[(32 <= cycle_id) & (cycle_id <= 44)]
@@ -112,7 +111,7 @@ class CPReader:
         range1_df = pd.DataFrame(range1_dict)
         return range1_df
 
-    def range2(self) -> pd.Series:
+    def _range2(self) -> pd.Series:
         """
         Range2:
         Smoothes a series by taking the median of 7 consecutive values (3 preceeding, 3 following).
@@ -131,7 +130,7 @@ class CPReader:
             new_series[idx] = val
         return new_series
 
-    def clot_amplitude(self) -> pd.DataFrame:
+    def _clot_amplitude(self) -> pd.DataFrame:
         """
         The clot amplitude is calculated as follows (CA(t) represents the CA at timepoint (t)):
         CA(t) = (iRange-Range(t))  / iRange * GCC * CCC * TCC
@@ -148,7 +147,7 @@ class CPReader:
 
         return result_df
 
-    def calculate_single_values(self) -> dict:
+    def _calculate_single_values(self) -> dict:
         single_values = {
             "initial_CT": self.table[self.table["amplitude"] > 2].iloc[0]["time"],
             "definite_CT": (ct := self.table[self.table["amplitude"] > 4].iloc[0]["time"]),
@@ -159,7 +158,7 @@ class CPReader:
         }
         return single_values
 
-    def calculate_lysis_values(self) -> dict:
+    def _calculate_lysis_values(self) -> dict:
         ct = self.single_values["definite_CT"]
         lysis_values = {
             "ML": min(self.table["lysis"].max(), 100),
@@ -182,11 +181,12 @@ class CPReader:
 
         return lysis_values
 
-    def calculate_mcf(self) -> tuple[int, float]:
+    def _calculate_mcf(self) -> tuple[int, float]:
         amplitudes = self.table["amplitude"]
         highest_ca: float = amplitudes[0]
         amplitude: float
         for idx, amplitude in enumerate(amplitudes):
+            # FIXME: this breaks too early.
             if (
                 (
                     # The MCF is finalized either (whichever scenario is achieved first)
@@ -209,10 +209,10 @@ class CPReader:
         # noinspection PyUnboundLocalVariable
         return idx, highest_ca
 
-    def calculate_lysis(self, mcf_idx: int) -> pd.Series:
+    def _calculate_lysis(self, mcf_idx: int) -> pd.Series:
         # since the MCF is currently not working, we use the max values instead (testing only!)
         # TODO: remove overwriting of mcf index
-        mcf_idx = self.table["amplitude"].idxmax()
+        mcf_idx = self.table["amplitude"].idxmax()  # <-- remove this
 
         mcf = self.table.iloc[mcf_idx]
 
