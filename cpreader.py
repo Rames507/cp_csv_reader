@@ -1,12 +1,17 @@
 import csv
+import logging
 import os
 import pathlib
 from collections import defaultdict
-from typing import Iterable
+from typing import Iterable, Callable
 
+import matplotlib.axes
+import matplotlib.figure
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
+logger = logging.getLogger(__name__)
 
 
 class CPReader:
@@ -66,6 +71,9 @@ class CPReader:
         """
         Splits the  dataframe into valid cycles of 50 elements,
         25 elements apart (from cycle_id 0 to 49 and 25 to 24 respectively).
+                                         1 to 0  and 26 to 25
+                                         yeah this doesn't make much sense but that's how it is defined
+                                         # TODO: cycle_ID
         Will ignore incomplete cycles.
         """
         # determines the starting point of the first cycle
@@ -75,7 +83,9 @@ class CPReader:
         start_idx: np.int64 = cycle_starting_points[0]
 
         for i in range(start_idx, len(self.raw_data), 25):
-            cycle = self.raw_data.iloc[i : i + 50]
+            idx = i + 1
+            cycle = self.raw_data.iloc[idx : idx + 50]
+
             if len(cycle) == 50:
                 yield cycle
 
@@ -90,12 +100,10 @@ class CPReader:
             median_values1: pd.DataFrame = cycle.loc[(7 <= cycle_id) & (cycle_id <= 19)]
             median_values2: pd.DataFrame = cycle.loc[(32 <= cycle_id) & (cycle_id <= 44)]
             # noinspection PyTypeChecker
-            values: pd.Series = pd.concat(
-                [
-                    median_values1["angle_id"],
-                    median_values2["angle_id"],
-                ]
-            )
+            values: pd.Series = pd.concat([
+                median_values1["angle_id"],
+                median_values2["angle_id"],
+            ])
             max_value = values.max()
             min_value = values.min()
             range_ = np.abs(max_value - min_value)
@@ -125,7 +133,7 @@ class CPReader:
             if idx <= 2 or idx >= (len(series) - 3):
                 val = np.nan
             else:
-                val = np.median(series[idx - 3 : idx + 4])
+                val = np.median(series.iloc[idx - 3 : idx + 4])
 
             new_series[idx] = val
         return new_series
@@ -147,43 +155,74 @@ class CPReader:
 
         return result_df
 
+    @staticmethod
+    def __catch_exceptions_for_single_value_calcs(name: str, value_func: Callable):
+        """
+        Catches exceptions and logs them to the global logger.
+        Will return NaN if an exception occurs.
+        :param name: Name of the value to be calculated. Only used for logging.
+        :param value_func: A function that takes no arguments.
+        """
+        # noinspection PyBroadException
+        try:
+            return value_func()
+        except Exception:
+            logger.warning(f"Could not calculate '{name}', setting no NaN instead.")
+            return np.nan
+
     def _calculate_single_values(self) -> dict:
-        single_values = {
-            "initial_CT": self.table[self.table["amplitude"] > 2].iloc[0]["time"],
-            "definite_CT": (ct := self.table[self.table["amplitude"] > 4].iloc[0]["time"]),
-            "A5": self.table[self.table["time"] == ct + 60 * 5]["amplitude"].iloc[0],
-            "A10": self.table[self.table["time"] == ct + 60 * 10]["amplitude"].iloc[0],
-            "A20": self.table[self.table["time"] == ct + 60 * 20]["amplitude"].iloc[0],
-            "CFT": self.table[self.table["amplitude"] > 20].iloc[0]["time"] - ct,
-        }
+        single_values = dict()
+
+        single_values["initial_CT"] = self.__catch_exceptions_for_single_value_calcs(
+            "initial_CT", lambda: self.table[self.table["amplitude"] > 2].iloc[0]["time"]
+        )
+
+        single_values["definite_CT"] = (
+            ct := self.__catch_exceptions_for_single_value_calcs(
+                "definite_CT", lambda: self.table[self.table["amplitude"] > 4].iloc[0]["time"]
+            )
+        )
+
+        single_values["A5"] = self.__catch_exceptions_for_single_value_calcs(
+            "A5", lambda: self.table[self.table["time"] == ct + 60 * 5]["amplitude"].iloc[0]
+        )
+        single_values["A10"] = self.__catch_exceptions_for_single_value_calcs(
+            "A10", lambda: self.table[self.table["time"] == ct + 60 * 10]["amplitude"].iloc[0]
+        )
+        single_values["A20"] = self.__catch_exceptions_for_single_value_calcs(
+            "A20", lambda: self.table[self.table["time"] == ct + 60 * 20]["amplitude"].iloc[0]
+        )
+        single_values["CFT"] = self.__catch_exceptions_for_single_value_calcs(
+            "CFT", lambda: self.table[self.table["amplitude"] > 20].iloc[0]["time"] - ct
+        )
         return single_values
 
     def _calculate_lysis_values(self) -> dict:
         ct = self.single_values["definite_CT"]
-        lysis_values = {
-            "ML": min(self.table["lysis"].max(), 100),
-            "LOT": self.table[self.table["lysis"] > 15].iloc[0]["time"] - ct,
-            "LT": self.table[self.table["lysis"] > 50].iloc[0]["time"] - ct,
-        }
+        lysis_values = dict()
 
-        try:
-            lysis_values["ML30"] = self.table[self.table["time"] == ct + 60 * 30]["ML"].item()
-        except ValueError:
-            lysis_values["ML30"] = np.nan
-        try:
-            lysis_values["ML45"] = self.table[self.table["time"] == ct + 60 * 45]["ML"].item()
-        except ValueError:
-            lysis_values["ML45"] = np.nan
-        try:
-            lysis_values["ML60"] = self.table[self.table["time"] == ct + 60 * 60]["ML"].item()
-        except ValueError:
-            lysis_values["ML60"] = np.nan
+        lysis_values["ML"] = min(self.table["lysis"].max(), 100)
+        lysis_values["LOT"] = self.__catch_exceptions_for_single_value_calcs(
+            "LOT", lambda: self.table[self.table["lysis"] > 15].iloc[0]["time"] - ct
+        )
+        lysis_values["LT"] = self.__catch_exceptions_for_single_value_calcs(
+            "LT", lambda: self.table[self.table["lysis"] > 50].iloc[0]["time"] - ct
+        )
+        lysis_values["ML30"] = self.__catch_exceptions_for_single_value_calcs(
+            "ML30", lambda: self.table[self.table["time"] == ct + 60 * 30]["ML"].item()
+        )
+        lysis_values["ML45"] = self.__catch_exceptions_for_single_value_calcs(
+            "ML45", lambda: self.table[self.table["time"] == ct + 60 * 45]["ML"].item()
+        )
+        lysis_values["ML60"] = self.__catch_exceptions_for_single_value_calcs(
+            "ML60", lambda: self.table[self.table["time"] == ct + 60 * 60]["ML"].item()
+        )
 
         return lysis_values
 
     def _calculate_mcf(self) -> tuple[int, float]:
-        amplitudes = self.table["amplitude"]
-        highest_ca: float = amplitudes[0]
+        amplitudes: pd.Series = self.table["amplitude"]
+        highest_ca: float = 0.0
         amplitude: float
         for idx, amplitude in enumerate(amplitudes):
             # FIXME: this breaks too early.
@@ -219,12 +258,57 @@ class CPReader:
         lysis = pd.Series(np.zeros(len(self.table)))
         lysis.iloc[:mcf_idx] = np.nan  # no lysis value before mcf is finalized
 
-        max_clot_firmness: float = mcf["amplitude"].item()
+        max_clot_firmness: float = mcf["amplitude"]
         table_subset = self.table.iloc[mcf_idx:]
-        lysis.iloc[mcf_idx:] = (1 - (table_subset["amplitude"] / max_clot_firmness)) * 100
+        lysis_subset = (1 - (table_subset["amplitude"] / max_clot_firmness)) * 100
+        lysis.iloc[mcf_idx:] = lysis_subset.astype(np.float64)
         return lysis
+
+    def plot(self):
+        fig: matplotlib.figure.Figure
+        ax: matplotlib.axes.Axes
+        fig, ax = plt.subplots()
+
+        amplitudes = self.table["amplitude"].copy()  # copy() to avoid writing data back to self.table
+        amplitudes[amplitudes < 2] = 2  # for plotting only round up all amplitude to at least 2
+
+        time = self.table["time"]
+
+        bar_width = time[1] - time[0]  # make the bars fill up the space between the indices.
+        max_value = amplitudes.max()
+        ax.set_ylim(max_value / -1.6, max_value / 1.6)
+
+        ax.set_axisbelow(True)
+        ax.set_xticks(np.arange(0, round(max(time), -1), 10))
+        ax.grid(linestyle="--", alpha=0.8)
+
+        # plot the green part before the initial CT
+        ct = self.single_values["initial_CT"]
+        ct_idx = time[time == ct].index.item()
+        amplitudes_plt = amplitudes.iloc[:ct_idx]
+        time_plt = time.iloc[:ct_idx] / 60
+        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#5D8C41")
+
+        # plot the purple part until CA reaches 10mm
+        try:
+            cft_idx = amplitudes[amplitudes > 20].index[0]
+        except IndexError:
+            # if it never reaches 20mm it will plot until the end
+            cft_idx = len(amplitudes)
+        amplitudes_plt = amplitudes.iloc[ct_idx:cft_idx]
+        time_plt = time.iloc[ct_idx:cft_idx] / 60
+        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#EA37F7")
+
+        # plot the rest
+        amplitudes_plt = amplitudes.iloc[cft_idx:]
+        time_plt = time.iloc[cft_idx:] / 60
+        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#394B90")
+
+        plt.show()
 
 
 if __name__ == "__main__":
-    t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
-    # t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
+    logging.basicConfig()
+    # t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
+    t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
+    t.plot()
