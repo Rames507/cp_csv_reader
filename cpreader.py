@@ -1,7 +1,7 @@
 import csv
 import logging
 import os
-import pathlib
+import traceback
 from collections import defaultdict
 from typing import Iterable, Callable
 
@@ -18,6 +18,7 @@ class CPReader:
     def __init__(
         self,
         file: str | os.PathLike[str],
+        *,
         gcc: float = 0.85,
         ccc: float = 1.0,
         tcc: float = 1.0,
@@ -40,7 +41,7 @@ class CPReader:
         self.table["range2"] = self._range2()
 
         # the slice is from 3 to 7 (both inclusive) since the first 3 values are always 'NaN'
-        self.irange = np.mean(self.table.loc[3:7, "range2"])  # noqa
+        self.irange = np.median(self.table.loc[3:7, "range2"])  # noqa
 
         self.table = self.table.merge(
             self._clot_amplitude(),
@@ -99,13 +100,10 @@ class CPReader:
             cycle_id = cycle["cycle_id"]
             median_values1: pd.DataFrame = cycle.loc[(7 <= cycle_id) & (cycle_id <= 19)]
             median_values2: pd.DataFrame = cycle.loc[(32 <= cycle_id) & (cycle_id <= 44)]
-            # noinspection PyTypeChecker
-            values: pd.Series = pd.concat([
-                median_values1["angle_id"],
-                median_values2["angle_id"],
-            ])
-            max_value = values.max()
-            min_value = values.min()
+
+            max_value = max(max(median_values1["angle_id"]), max(median_values2["angle_id"]))
+            min_value = min(min(median_values1["angle_id"]), min(median_values2["angle_id"]))
+
             range_ = np.abs(max_value - min_value)
 
             median1 = np.median(median_values1["angle_id"])
@@ -140,13 +138,14 @@ class CPReader:
 
     def _clot_amplitude(self) -> pd.DataFrame:
         """
-        The clot amplitude is calculated as follows (CA(t) represents the CA at timepoint (t)):
+        The clot amplitude is calculated as follows (CA(t) represents the CA at a point in time (t)):
         CA(t) = (iRange-Range(t))  / iRange * GCC * CCC * TCC
 
         :return: A dataframe with different clot amplitude values calculated.
         """
         # CA(t) = (iRange-Range(t))  / iRange *GCC *CCC*TCC
         result_df = pd.DataFrame()
+        # TODO: use range2 for CA instead?
         result_df["ca_raw"] = (self.irange - self.table["range"]) * 100 / self.irange
         result_df["ca_gcc"] = result_df["ca_raw"] * self.gcc
         result_df["ca_ccc"] = result_df["ca_gcc"] * self.ccc
@@ -168,6 +167,7 @@ class CPReader:
             return value_func()
         except Exception:
             logger.warning(f"Could not calculate '{name}', setting no NaN instead.")
+            logger.debug(traceback.format_exc())
             return np.nan
 
     def _calculate_single_values(self) -> dict:
@@ -270,24 +270,40 @@ class CPReader:
         fig, ax = plt.subplots()
 
         amplitudes = self.table["amplitude"].copy()  # copy() to avoid writing data back to self.table
-        amplitudes[amplitudes < 2] = 2  # for plotting only round up all amplitude to at least 2
+        amplitudes[amplitudes < 2] = 2  # for plotting only round up all amplitudes to at least 2
 
         time = self.table["time"]
 
-        bar_width = time[1] - time[0]  # make the bars fill up the space between the indices.
-        max_value = amplitudes.max()
-        ax.set_ylim(max_value / -1.6, max_value / 1.6)
-
         ax.set_axisbelow(True)
-        ax.set_xticks(np.arange(0, round(max(time), -1), 10))
         ax.grid(linestyle="--", alpha=0.8)
+
+        # set the width of the bars to the interval between datapoints.
+        # This makes the bars 'connect'
+        bar_width = time[1] - time[0]
+        max_value = amplitudes.max()
+
+        # Adds an edge above and below the graph.
+        edge = 0.5
+        ax.set_ylim(max_value / -(2 - edge), max_value / (2 - edge))
+
+        # Add ticks on the x-Axis in 10 minute intervals (600s).
+        # '+600' to add one extra tick at the end
+        x_ticks = np.arange(0, max(time) + 600, 600)
+        labels = (x_ticks / 60).astype(int)
+        ax.set_xticks(x_ticks, labels=labels)
+
+        ax.set_xlabel("Time in minutes")
 
         # plot the green part before the initial CT
         ct = self.single_values["initial_CT"]
         ct_idx = time[time == ct].index.item()
+
+        # time_plt is an array of x coordinates, where the data from amplitudes_plt will be plotted.
         amplitudes_plt = amplitudes.iloc[:ct_idx]
-        time_plt = time.iloc[:ct_idx] / 60
-        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#5D8C41")
+        time_plt = time.iloc[:ct_idx]
+        ax.bar(
+            time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, align="edge", color="#5D8C41"
+        )
 
         # plot the purple part until CA reaches 10mm
         try:
@@ -296,19 +312,25 @@ class CPReader:
             # if it never reaches 20mm it will plot until the end
             cft_idx = len(amplitudes)
         amplitudes_plt = amplitudes.iloc[ct_idx:cft_idx]
-        time_plt = time.iloc[ct_idx:cft_idx] / 60
-        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#EA37F7")
+        time_plt = time.iloc[ct_idx:cft_idx]
+        ax.bar(
+            time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, align="edge", color="#EA37F7"
+        )
 
         # plot the rest
         amplitudes_plt = amplitudes.iloc[cft_idx:]
-        time_plt = time.iloc[cft_idx:] / 60
-        ax.bar(time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, color="#394B90")
+        time_plt = time.iloc[cft_idx:]
+        ax.bar(
+            time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, align="edge", color="#394B90"
+        )
 
         plt.show()
 
 
 if __name__ == "__main__":
-    logging.basicConfig()
-    # t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
-    t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
+    import pathlib
+
+    logging.basicConfig(level=logging.INFO)
+    t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
+    # t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
     t.plot()
