@@ -72,20 +72,25 @@ class CPReader:
         """
         Splits the  dataframe into valid cycles of 50 elements,
         25 elements apart (from cycle_id 0 to 49 and 25 to 24 respectively).
-                                         1 to 0  and 26 to 25
-                                         yeah this doesn't make much sense but that's how it is defined
-                                         # TODO: cycle_ID
-        Will ignore incomplete cycles.
+        This is slightly different from the specification in the Word document
+        where cycles are split from IDs 1-0 and 26-25 respectively.
+        But since they are only retrieved by their Cycle_ID and never their index
+        it shouldn't make a difference and this is a much more natural split.
+        Will ignore incomplete half-cycles
+        (e.g.: if the raw data starts at Cycle_ID 4 all data before the next cycle
+        starting point - in this case 25 - will be dropped).
         """
         # determines the starting point of the first cycle
         # (important if input file doesn't start at cycle_id == 0)
-        # TODO: maybe allow first cycle to start at id 25?
-        cycle_starting_points: pd.DataFrame = self.raw_data.index[self.raw_data["cycle_id"] == 0]
+        # It is sufficient to only check the first 50 entries, since there are only 50 unique Cycle_IDs.
+        first_50_entries = self.raw_data[:50]
+        cycle_starting_points: pd.DataFrame = first_50_entries.index[
+            (first_50_entries["cycle_id"] == 0) | (first_50_entries["cycle_id"] == 25)
+        ]
         start_idx: np.int64 = cycle_starting_points[0]
 
         for i in range(start_idx, len(self.raw_data), 25):
-            idx = i + 1  # TODO: revert this
-            cycle = self.raw_data.iloc[idx : idx + 50]
+            cycle = self.raw_data.iloc[i : i + 50]
 
             if len(cycle) == 50:
                 yield cycle
@@ -282,7 +287,7 @@ class CPReader:
         bar_width = time[1] - time[0]
         max_value = amplitudes.max()
 
-        # Adds an edge above and below the graph.
+        # Adds some free space above and below the graph.
         edge = 0.5
         ax.set_ylim(max_value / -(2 - edge), max_value / (2 - edge))
 
