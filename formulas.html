@@ -1,0 +1,116 @@
+<!doctype html>
+<html>
+ <head>
+  <title>IntelliJ Markdown Preview</title>
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none';
+script-src 'self';
+style-src 'unsafe-inline';
+img-src file: *;
+connect-src 'none';
+font-src * data: *;
+object-src 'none';
+media-src 'none';
+child-src 'none';">
+  <style>/* Reworked by IntelliJ Team The MIT License (MIT) Copyright (c) JetBrains Adapted from https://github.com/sindresorhus/github-markdown-css The MIT License (MIT) Copyright (c) Sindre Sorhus &lt;sindresorhus@gmail.com&gt; (sindresorhus.com) Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the "Software"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions: The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software. THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE. */ @font-face { font-family: octicons-anchor; src: url(data:font/woff;charset=utf-8;base64,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) format('woff'); } body { -webkit-text-size-adjust: 100%; -ms-text-size-adjust: 100%; font-family: Helvetica, Arial, freesans, sans-serif; font-size: 14px; line-height: 1.6; word-wrap: break-word; margin: 0 2em; } strong { font-weight: bold; } img { border: 0; } input { color: inherit; font: inherit; margin: 0; line-height: normal; } html input[disabled] { cursor: default; } input[type="checkbox"] { box-sizing: border-box; padding: 0; } body * { box-sizing: border-box; } input { font: 13px/1.4 Helvetica, arial, nimbussansl, liberationsans, freesans, clean, sans-serif, "Segoe UI Emoji", "Segoe UI Symbol"; } a { text-decoration: none; } a:hover, a:active { text-decoration: underline; } hr { height: 1px; padding: 0; margin: 20px 0; border: 0 none; } hr:before { display: table; content: ""; } hr:after { display: table; clear: both; content: ""; } blockquote { margin: 0; } ul, ol { padding: 0; margin-top: 0; margin-bottom: 0; } ol ol, ul ol { list-style-type: lower-roman; } ul ul ol, ul ol ol, ol ul ol, ol ol ol { list-style-type: lower-alpha; } dd { margin-left: 0; } .octicon { font: normal normal normal 16px/1 octicons-anchor; display: inline-block; text-decoration: none; text-rendering: auto; -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; } .octicon-link:before { content: '\f05c'; } .markdown-body &gt; *:first-child { margin-top: 0 !important; } .markdown-body &gt; *:last-child { margin-bottom: 0 !important; } .anchor { position: absolute; top: 0; left: 0; display: block; padding-right: 6px; padding-left: 30px; margin-left: -30px; } .anchor:focus { outline: none; } h1, h2, h3, h4, h5, h6 { position: relative; margin-top: 1em; margin-bottom: 16px; font-weight: bold; line-height: 1.4; } h1 .octicon-link, h2 .octicon-link, h3 .octicon-link, h4 .octicon-link, h5 .octicon-link, h6 .octicon-link { display: none; color: #000; vertical-align: middle; } h1:hover .anchor, h2:hover .anchor, h3:hover .anchor, h4:hover .anchor, h5:hover .anchor, h6:hover .anchor { padding-left: 8px; margin-left: -30px; text-decoration: none; } h1:hover .anchor .octicon-link, h2:hover .anchor .octicon-link, h3:hover .anchor .octicon-link, h4:hover .anchor .octicon-link, h5:hover .anchor .octicon-link, h6:hover .anchor .octicon-link { display: inline-block; } h1 { font-size: 2.2em; padding-top: 0.6em; } h1 .anchor { line-height: 1; } h2 { font-size: 1.8em; line-height: 1.2; padding-top: 0.6em; } h2 .anchor { line-height: 1.2; } h3 { font-size: 1.3em; line-height: 1; padding-top: 0.6em; } h3 .anchor { line-height: 1.2; } h4 { font-size: 1em; } h4 .anchor { line-height: 1.2; } h5 { font-size: 1em; } h5 .anchor { line-height: 1.1; } h6 { font-size: 1em; } h6 .anchor { line-height: 1.1; } p, blockquote, ul, ol, dl, table, pre { margin-top: 16px; margin-bottom: 16px; } pre.frontmatter-header { background-color: transparent; margin: 0; padding: 0; } ul, ol { padding-left: 2em; } ul ul, ul ol, ol ol, ol ul { margin-top: 0; margin-bottom: 0; } li &gt; p { margin-top: 0; margin-bottom: 0; } dl { padding: 0; } dl dt { padding: 0; margin-top: 16px; font-size: 1em; font-style: italic; font-weight: bold; } dl dd { padding: 0 16px; margin-bottom: 16px; } blockquote { padding: 10px 10px 10px 16px; border-left: 2px solid; border-radius: 0 3px 3px 0; } blockquote &gt; :first-child { margin-top: 0; } blockquote &gt; :last-child { margin-bottom: 0; } table { display: block; width: 100%; overflow: auto; word-break: normal; border-collapse: collapse; border-spacing: 0; font-size: 1em; } table th { font-weight: bold; } table th, table td { padding: 6px 13px; background: transparent; } table tr { border-top: 1px solid; } img { max-width: 100%; box-sizing: border-box; } code { font: 0.9em "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace; padding: 0.2em 0.4em; margin: 2px; border-radius: 3px; } pre &gt; code { padding: 0; margin: 0; font-size: 100%; word-break: normal; white-space: pre; background: transparent; border: 0; } .highlight { margin-bottom: 16px; } .highlight pre, pre { font: 0.85em "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace; padding: 16px; overflow: auto; line-height: 1.45; border-radius: 3px; } pre code { display: inline; max-width: initial; padding: 0; margin: 0; overflow: initial; line-height: inherit; word-wrap: normal; background-color: transparent; border: 0; } pre code:before, pre code:after { content: normal; } kbd { font: 0.9em "JetBrains Mono", Consolas, "Liberation Mono", Menlo, Courier, monospace; padding: 0.2em 0.4em; margin: 2px; border-radius: 3px; } .task-list-item { list-style-type: none; } .task-list-item + .task-list-item { margin-top: 3px; } .task-list-item input { margin: 0 0.35em 0.25em -0.6em; vertical-align: middle; } :checked + .radio-label { z-index: 1; position: relative; } span.user-del { text-decoration: line-through; } ::-webkit-scrollbar { width: 6px; height: 6px; } ::-webkit-scrollbar-thumb { -webkit-border-radius: 10px; } ::-webkit-scrollbar-track:vertical { -webkit-box-shadow: -1px 0 0 #ededed; } ::-webkit-scrollbar-track { background-color: transparent; } ::-webkit-scrollbar { width: 6px; }</style>
+  <style>:root { --default-font-size: 13px; } body { background-color: rgba(30, 31, 34, 255.0); font-size: var(--default-font-size) !important; } body, p, blockquote, ul, ol, dl, table, pre, code, tr { color: rgba(188, 190, 196, 255.0); } a { color: rgba(107, 155, 250, 255.0); } table td, table th { border: 1px solid rgba(57, 59, 64, 255.0); } hr { background-color: rgba(57, 59, 64, 255.0); } kbd, tr { border: 1px solid rgba(57, 59, 64, 255.0); } h6 { color: rgba(111, 115, 122, 255.0); } blockquote { border-left: 2px solid rgba(107, 155, 250, 0.4); } blockquote, code, pre { background-color: rgba(212, 222, 231, 0.09803921568627451); } ::-webkit-scrollbar { width: 10px; height: 10px; background-color: rgba(0, 0, 0, 0); } ::-webkit-scrollbar-track { background-color: rgba(0, 0, 0, 0); } ::-webkit-scrollbar-track:hover { background-color: rgba(0, 0, 0, 0); } ::-webkit-scrollbar-thumb { background-color: rgba(166, 166, 166, 0.278431); border-radius: 0px; border-width: 1px; border-style: solid; border-color: rgba(0, 0, 0, 0); background-clip: padding-box; outline: 1px solid rgba(56, 56, 56, 0.278431); outline-offset: -1px; } ::-webkit-scrollbar-thumb:hover { background-color: rgba(166, 166, 166, 0.349020); border-radius: 0px; border-width: 1px; border-style: solid; border-color: rgba(0, 0, 0, 0); background-clip: padding-box; outline: 1px solid rgba(56, 56, 56, 0.349020); outline-offset: -1px; } ::-webkit-scrollbar-corner { background-color: rgba(0, 0, 0, 0); } ::-webkit-scrollbar-button { display:none; }</style>
+  <style>/* Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file. */ .code-fence-highlighter-copy-button { display: flex; position: absolute; float: left; margin-left: -1em; margin-top: -1em; } .code-fence-highlighter-copy-button-icon { visibility: hidden; max-width: 1em; } .code-fence:hover .code-fence-highlighter-copy-button-icon { visibility: visible; /*noinspection CssUnknownTarget*/ content: url("copy-button-copy-icon.png"); } .code-fence:hover .code-fence-highlighter-copy-button:hover .code-fence-highlighter-copy-button-icon { /*noinspection CssUnknownTarget*/ content: url("copy-button-copy-icon-hovered.png"); cursor: pointer; } .code-fence-highlighter-copy-button .tooltiptext { visibility: hidden; width: 120px; background-color: rgba(85, 85, 85, 0.4); color: #fff; text-align: center; border-radius: 6px; padding: 2px 0; position: absolute; font-size: 10px; z-index: 1; top: -4px; left: 120%; opacity: 0; transition: opacity 0.3s; } .code-fence-highlighter-copy-button:hover .tooltiptext { visibility: visible; opacity: 1; }</style>
+  <style>/* Copyright 2000-2021 JetBrains s.r.o. and contributors. Use of this source code is governed by the Apache 2.0 license that can be found in the LICENSE file. */ .run-icon &gt; img { max-width: 1em; vertical-align: text-top; margin-right: 0.3em; } .code-block { position: absolute; left: 1em; } .hidden { display: none; }</style>
+ </head>
+ <body>
+  <div md-src-pos="0..4099">
+   <table md-src-pos="1..3185">
+    <thead>
+     <tr md-src-pos="1..245">
+      <th align="center" md-src-pos="2..16">Name</th>
+      <th md-src-pos="17..244">Description</th>
+     </tr>
+    </thead>
+    <tbody>
+     <tr md-src-pos="491..735">
+      <td align="center" md-src-pos="492..506">*</td>
+      <td md-src-pos="507..734">the “*” before a numeric parameter represents that the parameter may not be final, i.e. that it may change during the course of the measurement</td>
+     </tr>
+     <tr class="intellij-row-even" md-src-pos="736..980">
+      <td align="center" md-src-pos="737..751"><strong md-src-pos="738..750">Angle_ID</strong></td>
+      <td md-src-pos="752..979">numeric representation of the angle position of the detection system of the Clot firmness analyzer</td>
+     </tr>
+     <tr md-src-pos="981..1225">
+      <td align="center" md-src-pos="982..996"><strong md-src-pos="986..992">CA</strong></td>
+      <td md-src-pos="997..1224">Clot Amplitude (in mm)</td>
+     </tr>
+     <tr class="intellij-row-even" md-src-pos="1226..1470">
+      <td align="center" md-src-pos="1227..1241"><strong md-src-pos="1231..1237">CT</strong></td>
+      <td md-src-pos="1242..1469">Clotting time in sec</td>
+     </tr>
+     <tr md-src-pos="1471..1715">
+      <td align="center" md-src-pos="1472..1486"><strong md-src-pos="1474..1483">Cycle</strong></td>
+      <td md-src-pos="1487..1714">50 consecutive datapoints starting either at Cycle_ID == 1 or 26 (every 25 values)</td>
+     </tr>
+     <tr class="intellij-row-even" md-src-pos="1716..1960">
+      <td align="center" md-src-pos="1717..1731"><strong md-src-pos="1718..1730">Cycle_ID</strong></td>
+      <td md-src-pos="1732..1959">Representation of the position of the detection system during the test cycle. A test cycle can begin at position 1 and end at position 00 or begin at position 26 and end at position 25. The time between 2 cycle IDs is 0.1 sec</td>
+     </tr>
+     <tr md-src-pos="1961..2205">
+      <td align="center" md-src-pos="1962..1976"><strong md-src-pos="1964..1973">Range</strong></td>
+      <td md-src-pos="1977..2204">Numeric representation of the distance of the extreme positions during each cycles (i.e. the position of the test system when it stands still)</td>
+     </tr>
+     <tr class="intellij-row-even" md-src-pos="2206..2450">
+      <td align="center" md-src-pos="2207..2221"><strong md-src-pos="2209..2219">Range1</strong></td>
+      <td md-src-pos="2222..2449">Range1 is the representation of the range calculated directly from the raw data of the instrument</td>
+     </tr>
+     <tr md-src-pos="2451..2695">
+      <td align="center" md-src-pos="2452..2466"><strong md-src-pos="2454..2464">Range2</strong></td>
+      <td md-src-pos="2467..2694">Range2 is the representation of the range calculated by smoothing Range1</td>
+     </tr>
+     <tr class="intellij-row-even" md-src-pos="2696..2940">
+      <td align="center" md-src-pos="2697..2711"><strong md-src-pos="2700..2708">Time</strong></td>
+      <td md-src-pos="2712..2939">“Time” is the timestamp in sec for the actual data position in relation of the start of the test, which is set as t=0 sec</td>
+     </tr>
+     <tr md-src-pos="2941..3185">
+      <td align="center" md-src-pos="2942..2956"><strong md-src-pos="2945..2952">(t)</strong></td>
+      <td md-src-pos="2957..3184">(t) represents that we refer to a specific timestamp for the respective value.</td>
+     </tr>
+    </tbody>
+   </table>
+   <p md-src-pos="3188..3197"><span md-src-pos="3188..3196">Formulas</span>:</p>
+   <pre class="code-fence" md-src-pos="3199..3352"><div class="code-fence-highlighter-copy-button" data-fence-content="QW5nbGVfSUQoQ3ljbGVfSURfc3RhcnQsIEN5Y2xlX0lEX2VuZCwgdCkgPSBhIHNldCBvZiBBbmdsZV9JRHMgYmV0d2VlbiB0aGUgZ2l2ZW4gQ3ljbGVfSURzIHN0YXJ0aW5nIGZyb20gYSBnaXZlbiBwb2ludCBpbiB0aW1lICh0KS4gRW5kIGluY2x1c2l2ZQ==">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3199..3352"><span md-src-pos="3199..3203"></span><span md-src-pos="3203..3349">Angle_ID(Cycle_ID_start, Cycle_ID_end, t) = a set of Angle_IDs between the given Cycle_IDs starting from a given point in time (t). End inclusive
+</span><span md-src-pos="3349..3352"></span></code></pre>
+   <pre class="code-fence" md-src-pos="3354..3421"><div class="code-fence-highlighter-copy-button" data-fence-content="UmFuZ2UodCkgPSBNYXgoQW5nbGVfSUQoMCwgNDksIHQpKSAtIE1pbihBbmdsZV9JRCgwLCA0OSwgdCk=">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3354..3421"><span md-src-pos="3354..3358"></span><span md-src-pos="3358..3418">Range(t) = Max(Angle_ID(0, 49, t)) - Min(Angle_ID(0, 49, t)
+</span><span md-src-pos="3418..3421"></span></code></pre>
+   <pre class="code-fence" md-src-pos="3423..3497"><div class="code-fence-highlighter-copy-button" data-fence-content="UmFuZ2UxKHQpID0gTWVkaWFuKEFuZ2xlX0lEKDctMTksIHQpKSAtIE1lZGlhbihBbmdsZV9JRCgzMi00NCwgdCkp">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3423..3497"><span md-src-pos="3423..3427"></span><span md-src-pos="3427..3494">Range1(t) = Median(Angle_ID(7-19, t)) - Median(Angle_ID(32-44, t))
+</span><span md-src-pos="3494..3497"></span></code></pre>
+   <p md-src-pos="3498..3606"><em md-src-pos="3498..3606">Range and Range1 are applied to each cycle, so they return a dataset 1/25th the size of the original data.</em></p>
+   <pre class="code-fence" md-src-pos="3608..3704"><div class="code-fence-highlighter-copy-button" data-fence-content="UmFuZ2UyKHQpID0gTWVkaWFuKFtSYW5nZTEodCAtIDMgKiAyLjUpLCBSYW5nZTEodCAtIDIgKiAyLjUpLCAuLi4sIFJhbmdlMSh0ICsgMyAqIDIuNSldKQ==">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3608..3704"><span md-src-pos="3608..3612"></span><span md-src-pos="3612..3701">Range2(t) = Median([Range1(t - 3 * 2.5), Range1(t - 2 * 2.5), ..., Range1(t + 3 * 2.5)])
+</span><span md-src-pos="3701..3704"></span></code></pre>
+   <pre class="code-fence" md-src-pos="3706..3770"><div class="code-fence-highlighter-copy-button" data-fence-content="aVJhbmdlID0gTWVkaWFuKFtSYW5nZTIoMyAqIDIuNSksIC4uLiwgUmFuZ2UyKDcgKiAyLjUpXSk=">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3706..3770"><span md-src-pos="3706..3710"></span><span md-src-pos="3710..3767">iRange = Median([Range2(3 * 2.5), ..., Range2(7 * 2.5)])
+</span><span md-src-pos="3767..3770"></span></code></pre>
+   <p md-src-pos="3771..3911"><em md-src-pos="3771..3911">*2.5 scales the index to the time position since cycles are 2.5s apart. If the first cycle doesn't start at t=0 an offset has to be added.</em></p>
+   <pre class="code-fence" md-src-pos="3913..3981"><div class="code-fence-highlighter-copy-button" data-fence-content="Q0EodCkgPSAoKGlSYW5nZS1SYW5nZSh0KSkgLyBpUmFuZ2UgKiBHQ0MgKiBDQ0MgKiBUQ0MpICogMTAw">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="3913..3981"><span md-src-pos="3913..3917"></span><span md-src-pos="3917..3978">CA(t) = ((iRange-Range(t)) / iRange * GCC * CCC * TCC) * 100
+</span><span md-src-pos="3978..3981"></span></code></pre>
+   <p md-src-pos="3982..4030"><em md-src-pos="3982..4030">I think Range2(t) should be used here instead.</em></p>
+   <pre class="code-fence" md-src-pos="4032..4098"><div class="code-fence-highlighter-copy-button" data-fence-content="TUwgPSAoMSAtIGxvd2VzdCBDQSBhZnRlciBmaW5hbGl6YXRpb24gb2YgTUNGIC8gTUNGKSAqIDEwMA==">
+  <img class="code-fence-highlighter-copy-button-icon" data-original-src="" src="http://localhost:63342/markdownPreview/1603991466/?_ijt=33jf7eqdp8rnjv6go4q8dg3b7v">
+  <span class="tooltiptext">Copy to clipboard</span>
+</div><code md-src-pos="4032..4098"><span md-src-pos="4032..4036"></span><span md-src-pos="4036..4095">ML = (1 - lowest CA after finalization of MCF / MCF) * 100
+</span><span md-src-pos="4095..4098"></span></code></pre>
+  </div>
+ </body>
+</html>

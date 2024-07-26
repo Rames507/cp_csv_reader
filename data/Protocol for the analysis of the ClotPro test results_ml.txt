@@ -1,0 +1,275 @@
+Protocol for the analysis of the ClotPro test results: 
+V1.0
+Andreas Calatzis
+
+1. Aim 
+
+This document describes the analysis of the ClotPro test results in the newly developed “Clot Analyzer Software” (CAS) by Apiro Diagnostics kft. The software is aimed to be used in future also for the newly developed MultiClot analyzer, which will also use the same communication protocol between the instrument firmware and the computer software. We will summarize ClotPro and MultiClot with the term “clot firmness analyzer” (CFA). 
+
+
+2. Version information 
+
+V1.0: generation of document 
+
+
+3. List of terms and abbreviations: 
+
+*	the “*” before a numeric parameter represents that the parameter may not be final, i.e. that it may change during the course of the measurement 
+Angle_ID	numeric representation of the angle position of the detection system of the Clot firmness analyzer (CFA)
+CA	Clot Amplitude (in mm)  
+CAS	Clot Analyzer Software 
+CFA	Clot Firmness Analyzer (i.e. ClotPro or MultiClot) 
+CG	Clot graph (also referred to as “thrombelastogram” or “ClotPro tracing” in literature) 
+CT	Clotting time in sec 
+ClotPro 	Clot firmness analyzer by enicor GmbH 
+Cycle_ID	Representation of the position of the detection system during the test cycle. A test cycle can begin at position 1 and end at position 00 or begin at position 26 and end at position 25. The time between 2 cycle IDs is 0.1 sec 
+Median	The middle value of a list of items (when listed according to size). Not to be confused with the mean value. The median of 3, 1, 1000, 2 and 4 is 3. 
+MultiClot 	Clot firmness analyzer by Apiro kft 
+Range	Numeric representation of the distance of the extreme positions during each cycles (i.e. the position of the test system when it stands still)
+Range1	Range1 is the representation of the range calculated directly from the raw data of the instrument
+Range2	Range2 is the representation of the range calculated by smoothing Range1
+Time	“Time” is the timestamp in sec for the actual data position in relation of the start of the test, which is set as t=0 sec
+(t)	(t) represents that we refer to a specific timestamp for the respective value. For Example CA(t) refers to the clot amplitude at time (t)
+
+
+4. Background: 
+
+Blood coagulation is the biological process that stops bleeding. When blood coagulation happens, blood changes from liquid to a kind of a gel, that allows bleeding to stop. 
+
+
+
+Fig. 1: Principle of blood coagulation 
+
+In the ClotPro system, the mechanical stability of the blood clot during this process is measured.  For this blood is placed between a cylindrical cup and a cylindrical pin, with a distance of 1 mm between the cup and the pin. 
+
+The cup is rotated every 5 seconds by 5° alternately to the right and left using a tiny wire, which acts as a spring. 
+
+Fig 2: Principle of the ClotPro analyzer
+
+
+As long as the blood is liquid this rotation of the cup is maximal. When the blood clots, the rotation of the cup is disturbed and the angle of the rotation is reduced, depending on the mechanical stability of the blood clot. 
+
+The angle of the detection system is continuously recorded and reported to the computer as a “Angle_ID”. Due to the detection method of ClotPro this Angle_ID has a linear relation to the actual angle of the detection system, but it is not directly transformable to the actual angle (because the actual value depends on certain variables of the mechanical system). For the detection system of the ClotPro this does not matter however. 
+
+In the following graph we can see the signal during a clotting process: One can see the periodic increase and decrease of the signal, as the detection system rotates to the right and left. In the shown example this movement is relatively constant for the first 5 cycles shown, but then decreases and reaches a minimum. This change of the signal represents the process of clotting. 
+
+Fig. 3: Angle_ID of the ClotPro analyzer during the clotting of the sample 
+
+The absolute difference (i.e. the value without + or -) from the maximum to the minimum of the signal is called range. During each cycle of 5 sec the motor rotates the mechanical unit for 1.2 sec to the left, stands still for 1.3 sec, rotates for 1.2 sec to the right and again stands still for 1.3 sec. When the system is in an idle state (no blood clot formed), the signal is relatively constant during this period of standstill. However during the clotting of the sample one can see that the signal changes also during the standstill of the motor, because the clot is increasing is continuously increasing in clot strength.  
+
+In the following figure one can see the signal during one cycle each when no clot is present, when the clot is weak and when the clot is strong. One can see the decreasing range of the movement of the test system, with an increasing clot strength.  
+
+
+
+Fig. 4: Angle_IDs for 3 different samples  
+
+
+The position of the test system in the cycle is the “Cycle_ID”. During each cycle the system stands relatively still between Cycle_IDs 7-19 and 32-44. The time between each cycle ID is 0.1 sec. Therefore each cycle takes 5 sec. 
+
+We have alternately one cycle that begins at position 1 (till position 00) and one cycle that begins at position 26 (till position 25). 
+
+
+Fig. 5: Cycles in relation to Cycle_IDs
+
+
+5. Calculation of the Range (Range1) 
+
+For each cycle the range is calculated as follows: 
+
+Range = Median(Angle_ID(7-19)) - Median(Angle_ID(32-44))
+
+
+As we will use a smoothing step, we will call this range, which we calculate form the raw signal as the “Range1”. 
+
+
+6. Definition of time (Time) 
+
+At the timepoint when system records the start of the test, the time is set as 0 sec. Each data point  has a “Time” position. 
+
+
+7. Smoothing of the Range (Range2) 
+
+For each 7 values (3 preceeding, the actual value, and 3 following values to the respective Time value, the median of the range is calculated (Range2). 
+
+
+8. Smoothing of the Range (Range2) 
+
+For each 7 values (3 preceeding, the actual value, and 3 following values to the respective Time value, the median of the range is calculated (Range2). 
+
+The first 3 Time values for each measurements have therefore no corresponding Range2 value. 
+
+
+
+9. Calculation of the initial Range (iRange) 
+
+The initial Range is defined as the median of the first 5 Range2 values. 
+
+The iRange is checked against the warning and error ranges set in the software (administrator privilege). 
+
+If the iRange is outside of the error range an “initial range error – measurement aborted” is generated and the warning level is not checked. 
+
+If the iRange is outside of the warning range an “initial range warning – check plausibility of test results” is generated and the measurement continues. 
+
+
+10. Calculation of the Clot Amplitude (CA) 
+
+The CA is calculated as follows (CA(t) represents the CA at timepoint (t)): 
+
+CA(t) = (iRange-Range(t)) / iRange *GCC *CCC*TCC
+
+GCC: global clot correction factor, setting in the software (service privilege)
+	Preset value for the GCC is 0.85. One setting in the software.
+
+CCC: channel clot correction factor, setting in the software (service privilege)
+	Preset value for the CCC is 1. One setting is needed per channel (1-6)  
+
+TCC: test clot correction factor, setting in the software (service privilege)
+	Preset value for the TCC is 1. One setting is needed for every test.  
+
+
+11. Drawing of the Clot Amplitudes in the Clot Graph 
+
+The Clot Graph represents the visual representation of the clot amplitude over time. 
+
+The Clot Graphs are displayed in the following grid. From the left to the right is the time axis, the interval between vertical lines represents 10 min. 
+
+
+Fig. 6: Grid for the display of the Clot Graph. The grid shows 80 mm clot amplitude vertically and 50 min time horizontally.  
+
+The curves are shown superposed on the grid. The following curve shows a measurement on the software on the previously used ClotPro analyzer, where you see how the measurement is superposed on the grid : 
+
+
+
+Fig. 7: Example of clot graph display on the ClotPro system.  
+
+One can see that the clot amplitude is shown symmetrically around the central line. E.g. a 20 mm amplitude is shown as 10 mm above the central line and 10 mm under the central line. 
+
+Amplitudes before the detection of the CT (clotting time) parameter are displayed as a green 2 mm line (5D8C41). 
+
+Amplitudes < than 2 mm are shown as 2 mm. This is the case when at the beginning of the test and the end of the test (in case of fibrinolysis). 
+
+Amplitudes after the detection of the CT parameter until an amplitude of 20 mm are displayed in purple (HEX EA37F7).
+
+Amplitudes higher than 20 mm are displayed in blue (HEX 394B90).
+
+When no CT is detected, only the CT is shown as follows: 
+
+CT is shown as CT> xxx sec 
+
+When the initial CT (see below) is detected CT is shown as CT    *xxx sec. 
+
+
+12. Calculation of the initial clotting time (CT) 
+
+The initial clotting time is detected when the CA reaches 2 mm. It is the time from the start of the test, until the CA reaches 2 mm. 
+
+The initial clotting time is shown as follows: 
+
+CT = *xxx sec 
+
+
+13. Calculation of the definite clotting time (CT) 
+
+The definite clotting time is determined when the CA reaches 4 mm. 
+
+From the time of the detection of a CA of 4 mm you have to determine the time when the CA was 2 mm (backwards from 4 mm).   
+
+
+The definite clotting time is shown as follows: 
+
+CT = xxx sec 
+
+
+When the definite CT has been detected, then the MCF is shown (if selected in the parameter selection in the service menu). 
+
+
+14. Calculation of the Maximum Clot Firmness (*MCF)  
+
+The *MCF (maximum clot firmness) represents the highest clot amplitude detected during the test. 
+
+*MCF = *xx mm
+
+The *MCF is only shown when the definite CT is shown, which means that the MCF is at least 4 mm.
+
+
+15. Calculation of the finalized Maximum Clot Firmness (MCF)  
+
+The MCF is finalized either (whichever scenario is achieved first) 
+
+* When 3 consecutive values are lower than the highest CA recorded prior to these 3 values 
+* When a CA of at least 20 mm is reached and the current CA is less than 0.5 mm larger than the CA of the value 10 lines before 
+* When the test is stopped 
+
+--> in each scenario the MCF is the highest CA value recorded prior to the trigger of the end of the test 
+
+
+When the measurement is stopped after the preliminary CT is reached, but before the definite CT is reached, the maximum CA recorded during the measurement is expressed, and also the determined CT (both without the *). 
+
+
+16. Calculation of the A5 (amplitude 5 mm after CT)   
+
+A5 = xx mm 
+
+The A5 is the CA reached 5 min after the definite CT. This means that you use the time stamp of the definite CT, you add 300 sec to this time stamp and then you express the corresponding CA. The parameter is shown only when it is actually determined.  
+
+
+17. Calculation of the A10 (amplitude 10 mm after CT)   
+
+A10 = xx mm 
+
+The A10 is the CA reached 10 min after the definite CT. This means that you use the time stamp of the definite CT, you add 600 sec to this time stamp and then you express the corresponding CA. The parameter is shown only when it is actually determined.  
+
+
+18. Calculation of the A20 (amplitude 10 mm after CT)   
+
+A20 = xx mm 
+
+The A20 is the CA reached 20 min after the definite CT. This means that you use the time stamp of the definite CT, you add 600 sec to this time stamp and then you express the corresponding CA. The parameter is shown only when it is actually determined.  
+
+
+19. Calculation of the CFT (clot formation time)   
+
+The CFT is calculated as the time interval between the definite CT and the timepoint when the CA reaches or exceeds 20 mm. 
+
+
+20. Calculation of the ML (maximum lysis)   
+
+The ML is expressed only after  the MCF is finalized. 
+
+The ML is calculated as follows: 
+
+(1-(Lowest CA detected after the finalization of the MCF / *MCF)) *100% 
+
+
+21. Calculation of the LOT (lysis onset time)   
+
+The LOT is the time from the CT until a ML of 15% is detected for the first time. 
+
+
+22. Calculation of the LT (lysis time)   
+
+The LOT is the time from the CT until a ML of 50% is detected for the first time. 
+
+
+23. Calculation of the ML30 (maximum lysis at 30 min after CT)   
+
+The ML30 is the ML detected at the timepoint 30 min after CT 
+
+
+24. Calculation of the ML45 (maximum lysis at 45 min after CT)   
+
+The ML45 is the ML detected at the timepoint 45 min after CT 
+
+
+25. Calculation of the ML60 (maximum lysis at 60 min after CT)   
+
+The ML60 is the ML detected at the timepoint 60 min after CT
+
+
+
+
+
+
+1
+
+

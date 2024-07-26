@@ -84,7 +84,7 @@ class CPReader:
         start_idx: np.int64 = cycle_starting_points[0]
 
         for i in range(start_idx, len(self.raw_data), 25):
-            idx = i + 1
+            idx = i + 1  # TODO: revert this
             cycle = self.raw_data.iloc[idx : idx + 50]
 
             if len(cycle) == 50:
@@ -143,10 +143,10 @@ class CPReader:
 
         :return: A dataframe with different clot amplitude values calculated.
         """
-        # CA(t) = (iRange-Range(t))  / iRange *GCC *CCC*TCC
+        # CA(t) = (iRange-Range(t)) / iRange *GCC *CCC*TCC
         result_df = pd.DataFrame()
         # TODO: use range2 for CA instead?
-        result_df["ca_raw"] = (self.irange - self.table["range"]) * 100 / self.irange
+        result_df["ca_raw"] = (self.irange - self.table["range2"]) * 100 / self.irange
         result_df["ca_gcc"] = result_df["ca_raw"] * self.gcc
         result_df["ca_ccc"] = result_df["ca_gcc"] * self.ccc
         result_df["ca_tcc"] = result_df["ca_ccc"] * self.tcc
