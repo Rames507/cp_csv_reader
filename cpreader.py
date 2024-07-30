@@ -24,13 +24,17 @@ class CPReader:
         tcc: float = 1.0,
     ):
         """
-        # TODO add documentation
-        :param file: Path to input file.
-            A CSV file with 3 columns: time, cycle_id, angle_id (e.g.: "1.5,17,6943")
+        Reads a csv file and parses the data. All computational work is done on object instantiation.
+        Most relevant data will be held by the objects .table (: pd.DataFrame) attribute.
+        All individual values are stored in the .single_values (: dict) attribute instead
+
+        :param file: Path to input file. A string or PathLike (os.Path, pathlib.Path).
+            The input file should be a CSV file with 3 columns: time, cycle_id, angle_id (e.g.: "1.5,17,6943")
+        :param gcc, ccc, tcc: global-/channel- and test-clot-correction-factor.
         """
-        self.gcc = gcc
-        self.ccc = ccc
-        self.tcc = tcc
+        self._gcc = gcc
+        self._ccc = ccc
+        self._tcc = tcc
 
         with open(file, "r") as f:
             reader = csv.reader(f)
@@ -41,7 +45,7 @@ class CPReader:
         self.table["range2"] = self._range2()
 
         # the slice is from 3 to 7 (both inclusive) since the first 3 values are always 'NaN'
-        self.irange = np.median(self.table.loc[3:7, "range2"])  # noqa
+        self._irange = np.median(self.table.loc[3:7, "range2"])  # noqa
 
         self.table = self.table.merge(
             self._clot_amplitude(),
@@ -57,16 +61,6 @@ class CPReader:
         self.table["ML"] = self.table["lysis"].cummax()
 
         self.single_values.update(self._calculate_lysis_values())
-
-        # TODO: remove those, just for testing
-        pd.set_option("display.max_rows", 30)
-        pd.set_option("display.max_columns", 15)
-        pd.set_option("display.width", None)
-        pos = 20
-        print(self.table.loc[pos : pos + 20, :])
-        from pprint import pprint
-
-        pprint(self.single_values)
 
     def _get_cycles(self) -> Iterable[pd.DataFrame]:
         """
@@ -151,10 +145,10 @@ class CPReader:
         # CA(t) = (iRange-Range(t)) / iRange *GCC *CCC*TCC
         result_df = pd.DataFrame()
         # TODO: use range2 for CA instead?
-        result_df["ca_raw"] = (self.irange - self.table["range2"]) * 100 / self.irange
-        result_df["ca_gcc"] = result_df["ca_raw"] * self.gcc
-        result_df["ca_ccc"] = result_df["ca_gcc"] * self.ccc
-        result_df["ca_tcc"] = result_df["ca_ccc"] * self.tcc
+        result_df["ca_raw"] = (self._irange - self.table["range2"]) * 100 / self._irange
+        result_df["ca_gcc"] = result_df["ca_raw"] * self._gcc
+        result_df["ca_ccc"] = result_df["ca_gcc"] * self._ccc
+        result_df["ca_tcc"] = result_df["ca_ccc"] * self._tcc
         result_df["amplitude"] = result_df["ca_tcc"]
 
         return result_df
@@ -334,8 +328,18 @@ class CPReader:
 
 if __name__ == "__main__":
     import pathlib
+    from pprint import pprint
 
     logging.basicConfig(level=logging.INFO)
     t = CPReader(pathlib.Path("./data/2024-03-25 14.53.14 Ch.1 EX-test fibrinolysis.csv"))
     # t = CPReader(pathlib.Path("./data/2024-04-01 09.02.28 Ch.4 IN-test heparin 1 u.csv"))
+
+    pd.set_option("display.max_rows", 30)
+    pd.set_option("display.max_columns", 15)
+    pd.set_option("display.width", None)
+    pos = 20
+    print(t.table.loc[pos: pos + 20, :])
+
+    pprint(t.single_values)
+
     t.plot()
