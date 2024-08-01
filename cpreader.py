@@ -336,9 +336,13 @@ class CPReader:
         :param exclude_graph: Set to exclude the image of the plot.
         """
         with pd.ExcelWriter(path, engine="openpyxl") as writer:
-            self.table.to_excel(writer, index=False, startcol=3, na_rep="NaN")
+            sheet_name = "cp_data"
+            self.table.to_excel(writer, index=False, startcol=3, na_rep="NaN", sheet_name=sheet_name)
             single_vals_df = pd.DataFrame(self.single_values.items())
-            single_vals_df.to_excel(writer, index=False, na_rep="NaN")
+            single_vals_df.to_excel(writer, index=False, na_rep="NaN", sheet_name=sheet_name)
+
+            # freeze first row to stay on top when scrolling
+            writer.book.active.freeze_panes = "A2"
 
             if exclude_graph:
                 return
