@@ -1,14 +1,15 @@
 import csv
+import io
 import logging
 import os
 import traceback
 from collections import defaultdict
 from typing import Iterable, Callable
 
-import matplotlib.axes
-import matplotlib.figure
 import matplotlib.pyplot as plt
 import numpy as np
+import openpyxl
+import openpyxl.drawing.image
 import pandas as pd
 
 logger = logging.getLogger(__name__)
@@ -263,9 +264,7 @@ class CPReader:
         lysis.iloc[mcf_idx:] = lysis_subset.astype(np.float64)
         return lysis
 
-    def plot(self):
-        fig: matplotlib.figure.Figure
-        ax: matplotlib.axes.Axes
+    def _get_plot(self):
         fig, ax = plt.subplots()
 
         amplitudes = self.table["amplitude"].copy()  # copy() to avoid writing data back to self.table
@@ -323,7 +322,37 @@ class CPReader:
             time_plt, height=amplitudes_plt, width=bar_width, bottom=amplitudes_plt / -2, align="edge", color="#394B90"
         )
 
-        plt.show()
+        return fig
+
+    def plot(self, *, block: bool = True):
+        self._get_plot()
+        plt.show(block=block)
+
+    def to_excel(self, path: str | os.PathLike[str], *, exclude_graph: bool = False):
+        """
+        Exports the table and all single values to an Excel file.
+        Also includes an image of the plot.
+        :param path: Target file
+        :param exclude_graph: Set to exclude the image of the plot.
+        """
+        with pd.ExcelWriter(path, engine="openpyxl") as writer:
+            self.table.to_excel(writer, index=False, startcol=3, na_rep="NaN")
+            single_vals_df = pd.DataFrame(self.single_values.items())
+            single_vals_df.to_excel(writer, index=False, na_rep="NaN")
+
+            if exclude_graph:
+                return
+            # load the plot into img_buf
+            plot_figure = self._get_plot()
+            img_buf = io.BytesIO()
+            plot_figure.savefig(img_buf, dpi=120)
+            img_buf.seek(0)
+
+            # add the image to the worksheet
+            wb: openpyxl.Workbook = writer.book
+            ws = wb.active
+            img = openpyxl.drawing.image.Image(img_buf)
+            ws.add_image(img, anchor="P3")
 
 
 if __name__ == "__main__":
@@ -338,8 +367,9 @@ if __name__ == "__main__":
     pd.set_option("display.max_columns", 15)
     pd.set_option("display.width", None)
     pos = 20
-    print(t.table.loc[pos: pos + 20, :])
+    print(t.table.loc[pos : pos + 20, :])
 
     pprint(t.single_values)
 
-    t.plot()
+    # t.plot()
+    t.to_excel(r"./test.xlsx")
